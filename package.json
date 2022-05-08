@@ -1,0 +1,42 @@
+{
+  "name": "thettencoder_v2",
+  "version": "0.0.1-a",
+  "description": "Encode file data.",
+  "main": "main.js",
+  "bin": "main.js",
+  "scripts": {
+    "build": "pkg ."
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Thetechacker/thettencoderV2.git"
+  },
+  "keywords": [
+    "Node.js",
+    "Hex",
+    "Data",
+    "Encoder",
+    "Thetechacker",
+    "Jimp",
+    "Image",
+    "PNG",
+    "Compression",
+    "File Seed",
+    "Seed"
+  ],
+  "author": "Thetechacker",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/Thetechacker/thettencoderV2/issues"
+  },
+  "homepage": "https://github.com/Thetechacker/thettencoderV2#readme",
+  "dependencies": {
+    "chalk": "^4.1.2",
+    "jimp": "^0.16.1"
+  },
+  "pkg": {
+    "targets": [
+      "node16-win-x64"
+    ]
+  }
+}
