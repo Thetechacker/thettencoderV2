@@ -1,5 +1,3 @@
-process.title = "thettencoderV2 - Decoder"
-
 console.clear()
 
 const pkg = require('./package.json')
