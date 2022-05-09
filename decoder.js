@@ -2,9 +2,18 @@ process.title = "thettencoderV2 - Decoder"
 
 console.clear()
 
-const config = require('./config.json')
+const pkg = require('./package.json')
 const fs = require('fs')
 const chalk = require('chalk')
+
+process.title = `thettencoderV2@${pkg.version} - Decoder`
+
+if(!fs.existsSync('./config.json')){
+    console.log(chalk.redBright(`[config]: Missing "config.json" file.`))
+    process.exit(1)
+}
+
+const config = require('./config.json')
 const Jimp = require('jimp')
 const path = require('path')
 
@@ -12,53 +21,16 @@ var ds = config.decoder_settings
 var dvc = config.developer_options
 var ex = (obj) => typeof obj === "string" && fs.existsSync(obj)
 
-var getFromBetween = {
-    results: [],
-    string: "",
-    getFromBetween: function (sub1, sub2) {
-        if (this.string.indexOf(sub1) < 0 || this.string.indexOf(sub2) < 0) return false;
-        var SP = this.string.indexOf(sub1) + sub1.length;
-        var string1 = this.string.substr(0, SP);
-        var string2 = this.string.substr(SP);
-        var TP = string1.length + string2.indexOf(sub2);
-        return this.string.substring(SP, TP);
-    },
-    removeFromBetween: function (sub1, sub2) {
-        if (this.string.indexOf(sub1) < 0 || this.string.indexOf(sub2) < 0) return false;
-        var removal = sub1 + this.getFromBetween(sub1, sub2) + sub2;
-        this.string = this.string.replace(removal, "");
-    },
-    getAllResults: function (sub1, sub2) {
-        if (this.string.indexOf(sub1) < 0 || this.string.indexOf(sub2) < 0) return;
-
-        var result = this.getFromBetween(sub1, sub2);
-
-        this.results.push(result);
-
-        this.removeFromBetween(sub1, sub2);
-        
-        if (this.string.indexOf(sub1) > -1 && this.string.indexOf(sub2) > -1) {
-            this.getAllResults(sub1, sub2);
-        } else return;
-    },
-    get: function (string, sub1, sub2) {
-        this.results = [];
-        this.string = string;
-        this.getAllResults(sub1, sub2);
-        return this.results;
-    }
-};
-
 try {
     if(ds.path_file_to_decode && ex(ds.path_file_to_decode) && fs.statSync(ds.path_file_to_decode).isFile()){
         if(ds.path_file_vocabulary && ex(ds.path_file_vocabulary) && fs.statSync(ds.path_file_to_decode).isFile()){
-            if(dvc.output_dir && ex(dvc.output_dir) && fs.statSync(dvc.output_dir).isDirectory()){
+            if(ds.output_file && typeof ds.output_file === "string"){
                 fs.readFile(ds.path_file_vocabulary, { encoding: "utf8" } ,(err, buf) => {
                     if(err) return console.log(chalk.redBright(`[fs]: Missing "path_file_to_encode" file.`))
     
                     try {
                         var jhv = JSON.parse(buf)
-    
+
                         if(jhv.unencoded_bytes && Array.isArray(jhv.unencoded_bytes)){
                             if(jhv.vocabulary && jhv.vocabulary.hex){
                                 jhv.unencoded_bytes = jhv.unencoded_bytes.filter(byte => typeof byte === "string")
@@ -115,20 +87,16 @@ try {
     
                                     pixels.length = 0
 
-                                    var d_nf = ds.path_file_to_decode.substr(0, ds.path_file_to_decode.indexOf('(')).split("./").join(""); var d_ext = getFromBetween.get(ds.path_file_to_decode, "(", ")"); d_ext[0] ? d_ext = `.${d_ext[0]}` : d_ext = `.ext`
-                                    var c_nf = ds.path_file_vocabulary.substr(0, ds.path_file_vocabulary.indexOf('(')).split("./").join(""); var c_ext = getFromBetween.get(ds.path_file_vocabulary, "(", ")"); c_ext[0] ? c_ext = `.${c_ext[0]}` : c_ext = `.ext`
-                                    var output_path = `${dvc.output_dir.endsWith("/") ? dvc.output_dir.slice(null, dvc.output_dir.length - 1) : dvc.output_dir}/${d_nf}${d_ext}`
-
-                                    hexarr = d_nf + d_ext === c_nf + c_ext ? [...hexarr, ...jhv.unencoded_bytes].filter(e => e) : hexarr.filter(e => e)
+                                    hexarr = ds.save_unencoded_bytes ? [...hexarr, ...jhv.unencoded_bytes].filter(e => e) : hexarr.filter(e => e)
     
                                     console.log(chalk.greenBright(`[${ds.path_file_to_decode}]: Successfully decoded image.`))
 
-                                    console.log(chalk.yellowBright(`[${output_path}]: Saving decoded image data as file...`))
+                                    console.log(chalk.yellowBright(`[./output/${path.basename(ds.output_file)}]: Saving decoded image data as file...`))
     
-                                    fs.writeFile(output_path, hexarr.map(e => e).join(""), { encoding: "hex" } , (err) => {
-                                        if(err) return console.log(chalk.redBright(`[${output_path}]: Unable to write the decoded file:\n${err.stack}`))
+                                    fs.writeFile(`./output/${path.basename(ds.output_file)}`, hexarr.map(e => e).join(""), { encoding: "hex" } , (err) => {
+                                        if(err) return console.log(chalk.redBright(`[./output/${path.basename(ds.output_file)}]: Unable to write the decoded file:\n${err.stack}`))
     
-                                        console.log(chalk.greenBright(`[${output_path}]: Done.`))
+                                        console.log(chalk.greenBright(`[./output/${path.basename(ds.output_file)}]: Done.`))
                                     })
                                 }).catch(err => {
                                     console.error(chalk.redBright(`[Jimp]: An error has occurred while reading the image data:\n${err.stack}`))
@@ -144,7 +112,7 @@ try {
                     }
                 })
             } else {
-                console.log(chalk.redBright(`[fs]: Missing "output_dir" directory.`))
+                console.log(chalk.redBright(`[fs]: Missing "output_file" filename.`))
             }
         } else {
             console.log(chalk.redBright(`[fs]: Missing "path_file_vocabulary" file.`))

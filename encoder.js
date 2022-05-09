@@ -1,10 +1,17 @@
-process.title = "thettencoderV2 - Encoder"
-
 console.clear()
 
-const config = require('./config.json')
+const pkg = require('./package.json')
 const fs = require('fs')
 const chalk = require('chalk')
+
+process.title = `thettencoderV2@${pkg.version} - Encoder`
+
+if(!fs.existsSync('./config.json')){
+    console.log(chalk.redBright(`[config]: Missing "config.json" file.`))
+    process.exit(1)
+}
+
+const config = require('./config.json')
 const Jimp = require('jimp')
 const path = require('path')
 
@@ -117,12 +124,12 @@ function encode(encode_str_func, hexvoc){
 
             const filedet = path.parse(es.path_file_to_encode)
 
-            image.write(`${dvc.output_dir.endsWith("/") ? dvc.output_dir.slice(null, dvc.output_dir.length - 1) : dvc.output_dir}/${filedet.name}(${filedet.ext.slice(1, this.length)})_encoded_image.png`, async (err) => {
+            image.write(`./output/${filedet.name}(${filedet.ext.slice(1, this.length)})_encoded_image.png`, async (err) => {
                 if (err) throw err
 
                 console.log(chalk.greenBright(`[${filedet.name}(${filedet.ext.slice(1, this.length)})_encoded_image.png]: Encoded file successfully.`))
 
-                fs.writeFile(`${dvc.output_dir.endsWith("/") ? dvc.output_dir.slice(null, dvc.output_dir.length - 1) : dvc.output_dir}/${filedet.name}(${filedet.ext.slice(1, this.length)})_info.json`, JSON.stringify({unencoded_bytes, vocabulary: hexvoc}), function(err){
+                fs.writeFile(`./output/${filedet.name}(${filedet.ext.slice(1, this.length)})_info.json`, JSON.stringify({unencoded_bytes, vocabulary: hexvoc}), function(err){
                     if(err) throw err
 
                     console.log(chalk.greenBright(`[${filedet.name}(${filedet.ext.slice(1, this.length)})_info.json]: Saved file info & vocabulary.`))
@@ -134,65 +141,61 @@ function encode(encode_str_func, hexvoc){
 
 try {
     if(es.path_file_to_encode && ex(es.path_file_to_encode)){
-        if(dvc.output_dir && ex(dvc.output_dir) && fs.statSync(dvc.output_dir).isDirectory()){
-            if(typeof es.hex_vocabulary_path === "string"){
-                console.log(chalk.yellowBright(`[Hex Vocabulary]: Reading Vocabulary File...`))
+        if(typeof es.hex_vocabulary_path === "string"){
+            console.log(chalk.yellowBright(`[Hex Vocabulary]: Reading Vocabulary File...`))
+
+            fs.readFile(es.hex_vocabulary_path, { encoding: "utf8" }, (err, buf) => {
+                if(err) return console.log(chalk.redBright(`[fs]: Missing "hex_vocabulary_path" file.`))
+
+                try {
+                    var jhv = JSON.parse(buf)
     
-                fs.readFile(es.hex_vocabulary_path, { encoding: "utf8" }, (err, buf) => {
-                    if(err) return console.log(chalk.redBright(`[fs]: Missing "hex_vocabulary_path" file.`))
+                    if(jhv.vocabulary && jhv.vocabulary.hex){
+                        var hex = jhv.vocabulary
     
-                    try {
-                        var jhv = JSON.parse(buf)
-        
-                        if(jhv.vocabulary && jhv.vocabulary.hex){
-                            var hex = jhv.vocabulary
-        
-                            console.log(chalk.greenBright(`[Hex Vocabulary]: Successfully loaded Vocabulary File.`))
-        
-                            function encode_str(bytestr){
-                                if(!hex.hex[`#${bytestr}`]){
-                                    console.log(chalk.redBright(`[Hex Vocabulary]: Missing byte "${bytestr}" in vocabulary.`))
-                                    process.exit(1)
-                                } else {
-                                    return hex.hex[`#${bytestr}`]
-                                }
-                            }
+                        console.log(chalk.greenBright(`[Hex Vocabulary]: Successfully loaded Vocabulary File.`))
     
-                            encode(encode_str, hex)
-                        } else {
-                            console.log(chalk.redBright(`[Hex Vocabulary]: Missing Hex Vocabulary.`))
-                        }
-                    } catch(err){
-                        console.log(chalk.redBright(`[JSON.parse]: Bad JSON Configuration File.`))
-                    }  
-                })
-            } else {
-                if(dvc.hex_length && typeof dvc.hex_length === "number" && dvc.hex_length >= 2 && dvc.hex_length != Infinity){
-                    if(dvc.elems_per_chunk && typeof dvc.elems_per_chunk === "number" && dvc.elems_per_chunk >= 1 && dvc.elems_per_chunk != Infinity){
-                        generateHexList("f".repeat(dvc.hex_length), dvc.hex_length).then(res => {
-                            var bytes_cp = res.list
-    
-                            console.log(chalk.yellowBright(`[Hex Vocabulary]: Assigning random DecPixVals to Hex Vocabulary.`))
-                        
-                            var hex = JSON.parse(`{ "hex": { ${bytes_cp.map((e, i, arr) => `"#${e}": "${randomPixDecVal()}"`).join(", ")} } }`)
-    
-                            console.log(chalk.greenBright(`[Hex Vocabulary]: Assigned DecPixVals to Hex Vocabulary.`))
-    
-                            function encode_str(bytestr){
+                        function encode_str(bytestr){
+                            if(!hex.hex[`#${bytestr}`]){
+                                console.log(chalk.redBright(`[Hex Vocabulary]: Missing byte "${bytestr}" in vocabulary.`))
+                                process.exit(1)
+                            } else {
                                 return hex.hex[`#${bytestr}`]
                             }
-    
-                            encode(encode_str, hex)
-                        })
+                        }
+
+                        encode(encode_str, hex)
                     } else {
-                        console.log(chalk.redBright(`[config]: "developer_options:num_chunks" must be an integer.`))
+                        console.log(chalk.redBright(`[Hex Vocabulary]: Missing Hex Vocabulary.`))
                     }
-                } else {
-                    console.log(chalk.redBright(`[config]: "developer_options:hex_length" must be an integer.`))
-                }
-            }
+                } catch(err){
+                    console.log(chalk.redBright(`[JSON.parse]: Bad JSON Configuration File.`))
+                }  
+            })
         } else {
-            console.log(chalk.redBright(`[fs]: Missing "output_dir" directory.`))
+            if(dvc.hex_length && typeof dvc.hex_length === "number" && dvc.hex_length >= 2 && dvc.hex_length != Infinity){
+                if(dvc.elems_per_chunk && typeof dvc.elems_per_chunk === "number" && dvc.elems_per_chunk >= 1 && dvc.elems_per_chunk != Infinity){
+                    generateHexList("f".repeat(dvc.hex_length), dvc.hex_length).then(res => {
+                        var bytes_cp = res.list
+
+                        console.log(chalk.yellowBright(`[Hex Vocabulary]: Assigning random DecPixVals to Hex Vocabulary.`))
+                    
+                        var hex = JSON.parse(`{ "hex": { ${bytes_cp.map((e, i, arr) => `"#${e}": "${randomPixDecVal()}"`).join(", ")} } }`)
+
+                        console.log(chalk.greenBright(`[Hex Vocabulary]: Assigned DecPixVals to Hex Vocabulary.`))
+
+                        function encode_str(bytestr){
+                            return hex.hex[`#${bytestr}`]
+                        }
+
+                        encode(encode_str, hex)
+                    })
+                } else {
+                    console.log(chalk.redBright(`[config]: "developer_options:num_chunks" must be an integer.`))
+                }
+            } else {
+                console.log(chalk.redBright(`[config]: "developer_options:hex_length" must be an integer.`))
+            }
         }
     } else {
         console.log(chalk.redBright(`[fs]: Missing "path_file_to_encode" file.`))

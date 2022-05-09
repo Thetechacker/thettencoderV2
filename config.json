@@ -1,17 +1,18 @@
 {
     "encoder_settings": {
-        "path_file_to_encode": "./encoder.js",
+        "path_file_to_encode": "./input.ext",
         "#hex_vocabulary.comment": "The value should be a string that contains the path to the vocabulary or null value.",
         "hex_vocabulary_path": null
     },
     "decoder_settings": {
-        "path_file_to_decode": "./encoder(js)_encoded_image.png",
-        "path_file_vocabulary": "./encoder(js)_info.json"
+        "path_file_to_decode": "./output/output(ext)_encoded_image.png",
+        "path_file_vocabulary": "./output/input(ext)_info.json",
+        "output_file": "output.ext",
+        "save_unencoded_bytes": true
     },
     "developer_options": {
-        "output_dir": "./output",
         "hex_length": 4,
-        "elems_per_chunk": 500,
+        "elems_per_chunk": 70,
         "log_info": true
     }
 }
