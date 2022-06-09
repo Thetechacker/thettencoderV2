@@ -40,7 +40,7 @@ async function generateHexList(generate_elems_hexnum, digits){
             hexstr = "0".repeat(digits - hexstr.length) + hexstr
         }
 
-        if((hexstr.length % 2) == 1){
+        if(digits !== 1 && (hexstr.length % 2) == 1){
             hexstr = "0" + hexstr
         }
 
@@ -173,7 +173,7 @@ try {
                 }  
             })
         } else {
-            if(dvc.hex_length && typeof dvc.hex_length === "number" && dvc.hex_length >= 2 && dvc.hex_length != Infinity){
+            if(dvc.hex_length && typeof dvc.hex_length === "number" && dvc.hex_length >= 1 && dvc.hex_length != Infinity){
                 if(dvc.elems_per_chunk && typeof dvc.elems_per_chunk === "number" && dvc.elems_per_chunk >= 1 && dvc.elems_per_chunk != Infinity){
                     generateHexList("f".repeat(dvc.hex_length), dvc.hex_length).then(res => {
                         var bytes_cp = res.list
